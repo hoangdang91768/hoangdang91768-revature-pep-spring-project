@@ -21,13 +21,13 @@ public class MessageService {
     private AccountRepository accountRepository;
 
     public Message createMessage(Message message) {
-        // Check if the user exists
+        // check if user exists
         Optional<Account> account = accountRepository.findById(message.getPostedBy());
         if (account.isEmpty()) {
             throw new IllegalArgumentException("User not found in the database");
         }
 
-        // Validate the message text
+        // validate message text
         if (message.getMessageText() == null || message.getMessageText().trim().isEmpty()) {
             throw new IllegalArgumentException("Message text cannot be blank");
         }
@@ -36,7 +36,7 @@ public class MessageService {
             throw new IllegalArgumentException("Message text cannot exceed 255 characters");
         }
 
-        // Save and return the message
+        // save and return
         return messageRepository.save(message);
     }
     

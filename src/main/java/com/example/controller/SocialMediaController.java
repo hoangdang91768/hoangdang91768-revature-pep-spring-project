@@ -7,8 +7,9 @@ import com.example.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +30,15 @@ public class SocialMediaController {
     @Autowired
     private MessageService messageService;
 
+// ************************************* USER ********************************************
+
     // User Registration
     @PostMapping("/register")
     public ResponseEntity<Account> registerAccount(@RequestBody Account account) {
         Account newAccount = accountService.registerAccount(account.getUsername(), account.getPassword());
         return ResponseEntity.ok(newAccount);
     }
+
 
     // User Login
     @PostMapping("/login")
@@ -43,6 +47,8 @@ public class SocialMediaController {
         return loggedInAccount.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
     }
+
+// ************************************* MESSAGE ********************************************
 
     // Create a new message
     @PostMapping("/messages")
@@ -55,14 +61,23 @@ public class SocialMediaController {
         }
     }
 
-    // Retrieve all messages
+
+    // retrieve all messages
     @GetMapping("/messages")
     public ResponseEntity<List<Message>> getAllMessages() {
         List<Message> messages = messageService.getAllMessages();
         return ResponseEntity.ok(messages);
     }
 
-    // Retrieve a message by its ID
+    // retrieve all messages by a specific user
+    @GetMapping("/accounts/{accountId}/messages")
+    public ResponseEntity<List<Message>> getMessagesByAccountId(@PathVariable Integer accountId) {
+        List<Message> messages = messageService.getMessagesByAccountId(accountId);
+        return ResponseEntity.ok(messages);
+    }
+
+
+    // retrieve a message by its ID
     @GetMapping("/messages/{messageId}")
     public ResponseEntity<Message> getMessageById(@PathVariable Integer messageId) {
         Optional<Message> message = messageService.findMessageById(messageId);
@@ -70,7 +85,7 @@ public class SocialMediaController {
                     .orElseGet(() -> ResponseEntity.ok().build()); // Return 200 OK with an empty body if not found
     }
 
-    // Delete a message by its ID
+    // delete a message by its ID
     @DeleteMapping("/messages/{messageId}")
     public ResponseEntity<?> deleteMessage(@PathVariable Integer messageId) {
         boolean deleted = messageService.deleteMessage(messageId);
@@ -81,20 +96,21 @@ public class SocialMediaController {
         }
     }
 
-
-    // Update a message by its ID
+    // update a message by its ID
     @PatchMapping("/messages/{messageId}")
-    public ResponseEntity<Integer> updateMessage(@PathVariable Integer messageId, @RequestBody String newMessageText) {
+    public ResponseEntity<Integer> updateMessage(@PathVariable Integer messageId, @RequestBody String requestBody) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String newMessageText;
+
+        try {
+            JsonNode jsonNode = objectMapper.readTree(requestBody);
+            newMessageText = jsonNode.get("messageText").asText();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(0);
+        }
+
         messageService.updateMessage(messageId, newMessageText);
         return ResponseEntity.ok(1); // Indicate one row was modified
-    }
-
-
-    // Retrieve all messages by a specific user
-    @GetMapping("/accounts/{accountId}/messages")
-    public ResponseEntity<List<Message>> getMessagesByAccountId(@PathVariable Integer accountId) {
-        List<Message> messages = messageService.getMessagesByAccountId(accountId);
-        return ResponseEntity.ok(messages);
     }
 }
 

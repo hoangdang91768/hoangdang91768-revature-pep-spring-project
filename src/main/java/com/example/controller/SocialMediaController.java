@@ -58,30 +58,37 @@ public class SocialMediaController {
     // Retrieve all messages
     @GetMapping("/messages")
     public ResponseEntity<List<Message>> getAllMessages() {
-        List<Message> messages = messageService.getMessagesByAccountId(null);
+        List<Message> messages = messageService.getAllMessages();
         return ResponseEntity.ok(messages);
     }
 
     // Retrieve a message by its ID
     @GetMapping("/messages/{messageId}")
     public ResponseEntity<Message> getMessageById(@PathVariable Integer messageId) {
-        Message message = messageService.getMessageById(messageId);
-        return ResponseEntity.ok(message);
+        Optional<Message> message = messageService.findMessageById(messageId);
+        return message.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.ok().build()); // Return 200 OK with an empty body if not found
     }
 
     // Delete a message by its ID
     @DeleteMapping("/messages/{messageId}")
-    public ResponseEntity<Void> deleteMessage(@PathVariable Integer messageId) {
+    public ResponseEntity<?> deleteMessage(@PathVariable Integer messageId) {
         boolean deleted = messageService.deleteMessage(messageId);
-        return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+        if (deleted) {
+            return ResponseEntity.ok(1);  // Return 1 if a message was deleted
+        } else {
+            return ResponseEntity.ok(""); // Return an empty string for 200 status even if no message was deleted
+        }
     }
+
 
     // Update a message by its ID
     @PatchMapping("/messages/{messageId}")
-    public ResponseEntity<Message> updateMessage(@PathVariable Integer messageId, @RequestBody String newMessageText) {
-        Message updatedMessage = messageService.updateMessage(messageId, newMessageText);
-        return ResponseEntity.ok(updatedMessage);
+    public ResponseEntity<Integer> updateMessage(@PathVariable Integer messageId, @RequestBody String newMessageText) {
+        messageService.updateMessage(messageId, newMessageText);
+        return ResponseEntity.ok(1); // Indicate one row was modified
     }
+
 
     // Retrieve all messages by a specific user
     @GetMapping("/accounts/{accountId}/messages")

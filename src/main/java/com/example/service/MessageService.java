@@ -40,14 +40,17 @@ public class MessageService {
         return messageRepository.save(message);
     }
     
-
+    public List<Message> getAllMessages() {
+        return messageRepository.findAll();
+    }
+    
     public List<Message> getMessagesByAccountId(Integer accountId) {
         return messageRepository.findByPostedBy(accountId);
     }
 
-    public Message getMessageById(Integer messageId) {
-        return messageRepository.findById(messageId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Message not found"));
-    }
+    public Optional<Message> findMessageById(Integer messageId) {
+        return messageRepository.findById(messageId);
+    }    
 
     public boolean deleteMessage(Integer messageId) {
         if (messageRepository.existsById(messageId)) {
@@ -59,19 +62,18 @@ public class MessageService {
     }
 
     public Message updateMessage(Integer messageId, String newMessageText) {
-        // validate new message text
         if (newMessageText == null || newMessageText.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message text cannot be blank");
         }
         if (newMessageText.length() > 255) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message text cannot exceed 255 characters");
         }
-
-        // retrieve the old message 
-        Message existingMessage = getMessageById(messageId);
-        // update by new message
+    
+        Message existingMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message not found"));
+    
         existingMessage.setMessageText(newMessageText);
-        // save
         return messageRepository.save(existingMessage);
     }
+    
 }
